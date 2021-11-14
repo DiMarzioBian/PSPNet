@@ -9,10 +9,10 @@ import torch.nn as nn
 import torch.optim as optim
 from torchaudio.datasets.utils import download_url, extract_archive
 
-from preprocess.Dataset import getter_dataloader, get_num_label
-from Epoch import train_epoch, test_epoch
-from Utils import set_optimizer_lr, data_downloader
-
+from datasets.__init__ import getter_dataloader, get_num_label
+from epoch import train_epoch, test_epoch
+from utils import set_optimizer_lr, data_downloader
+from datasets.dataloader_assd import get_mean_std
 
 def main():
     parser = argparse.ArgumentParser()
@@ -26,7 +26,7 @@ def main():
 
     parser.add_argument('-data', default='GTZAN')  # ranging from 0 to 9, integer
     parser.add_argument('-enable_data_filtered', default=True)  # Enable data filtering
-    parser.add_argument('-download', default=True)  # Download dataset
+    parser.add_argument('-download', default=True)  # Download datasets
     parser.add_argument('-sample_rate', type=int, default=16000)
     parser.add_argument('-hop_gap', type=float, default=0.5)  # time gap between each adjacent splits in a track
     parser.add_argument('-sample_splits_per_track', type=int, default=4)  # Random sampling splits instead of using all
@@ -54,7 +54,7 @@ def main():
     for k, v in vars(opt).items():
         print('         %s: %s' % (k, v))
 
-    # Download dataset
+    # Download datasets
     if opt.download:
         data_downloader(opt.data)
 
@@ -209,7 +209,7 @@ def train(opt):
 #     print('\n[ Epoch testing ]')
 #
 #     with torch.no_grad():
-#         loss_test, acc_test, acc_test_voting = test_epoch(model, valloader, val_gt_voting, opt, dataset='test')
+#         loss_test, acc_test, acc_test_voting = test_epoch(model, valloader, val_gt_voting, opt, datasets='test')
 #
 #     print('\n- [Info] Test loss:{loss: 8.4f}, accuracy:{acc: 8.4f}, voting accuracy:{voting: 8.4f}'
 #           .format(acc=acc_test, loss=loss_test, voting=acc_test_voting), )
@@ -220,9 +220,10 @@ def train(opt):
 
 
 if __name__ == '__main__':
-    os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
-    seed = 0
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    main()
+    # os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+    # seed = 0
+    # np.random.seed(seed)
+    # torch.manual_seed(seed)
+    # torch.cuda.manual_seed_all(seed)
+    # main()
+    get_mean_std(['000', '111'])

@@ -21,7 +21,7 @@ def data_downloader(dataset):
     elif dataset == 'EBallroom':
         filename = '_data/EBallroom/chacha/chacha.100701.mp3'
         if os.path.exists(filename):
-            print('\nExtended Ballroom dataset downloaded.......\n')
+            print('\nExtended Ballroom datasets downloaded.......\n')
         else:
             raise RuntimeError(
                 "\nError loading EBallroom. Please run script 'getEBallroom.py.py' to download......\n"
