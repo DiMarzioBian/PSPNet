@@ -32,3 +32,16 @@ class LabelSmoothingLoss(nn.Module):
 
         return loss.sum()
 
+
+def get_loss(y_pred, y_gt):
+    """
+    Calculate loss for back propagation.
+    """
+    return 0.5
+
+
+def get_metric(y_pred, y_gt):
+    """
+    Compute mIoU and per pixel accuracy.
+    """
+    return 0.5, 0.5

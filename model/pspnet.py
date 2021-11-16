@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models as models
 
-from xxDrone.Metrics import LabelSmoothingLoss
+from model.metrics import LabelSmoothingLoss
 
 
 class SincConv_fast(nn.Module):
@@ -162,9 +162,9 @@ class SPP_Resnet(nn.Module):
         return x
 
 
-class xxDrone(nn.Module):
+class PSPNet(nn.Module):
     def __init__(self, opt):
-        super(xxDrone, self).__init__()
+        super(PSPNet, self).__init__()
         self.resnet_pretrained = opt.resnet_pretrained
         self.enable_spp = opt.enable_spp
         self.num_label = opt.num_label
@@ -201,21 +201,6 @@ class xxDrone(nn.Module):
                        feat2.unsqueeze_(dim=1),
                        feat3.unsqueeze_(dim=1)), dim=1)
         x = self.spp_resnet(x)
-        return x, feat1, feat2, feat3
+        return x
 
-    def loss(self, wave, y_gt):
-        """ Compute loss """
-        score_pred, *_ = self.forward(wave)
-        loss = self.calc_loss(score_pred, y_gt)
-        _, y_pred = torch.max(score_pred, -1)
-        num_correct_pred = y_pred.eq(y_gt).sum()
-        return loss, num_correct_pred
-
-    def predict(self, wave, y_gt):
-        """ Predict data label and compute loss"""
-        score_pred, *_ = self.forward(wave)
-        loss = self.calc_loss(score_pred, y_gt)
-        _, y_pred = torch.max(score_pred, -1)
-        num_correct_pred = y_pred.eq(y_gt).sum()
-        return loss, num_correct_pred, y_pred
 

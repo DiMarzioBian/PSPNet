@@ -1,4 +1,3 @@
-import os
 from datasets.dataloader_assd import *
 from sklearn.model_selection import StratifiedKFold
 
@@ -9,11 +8,9 @@ class getter_dataloader(object):
     def __init__(self, opt):
         self.opt = opt
         dataset = self.opt.data
-        enable_data_filtered = self.opt.enable_data_filtered
 
         if dataset == 'assd':
             dir_img = '_data/assd/original_images/'
-            dir_gt = '_data/assd/label_images_semantic/'
             filename_img = []
             for _, _, file_list in os.walk(dir_img):
                 for track_name in file_list:
@@ -41,7 +38,7 @@ class getter_dataloader(object):
 
 
 def get_num_label(dataset: str):
-    if dataset == 'ASSD':
+    if dataset == 'assd':
         return 23
     else:
         raise RuntimeError('Dataset ' + dataset + ' not found!')
