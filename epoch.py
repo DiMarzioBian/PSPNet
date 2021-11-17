@@ -21,10 +21,10 @@ def train_epoch(model, data, opt, optimizer):
 
     model.train()
     for batch in tqdm(data, desc='- (Training)   ', leave=False):
-        wave, y_gt = map(lambda x: x.to(opt.device), batch)
+        images, y_gt = map(lambda x: x.to(opt.device), batch)
 
         """ training """
-        y_pred = model(wave, y_gt)
+        y_pred = model(images, y_gt)
         loss = get_loss(y_pred, y_gt)
         miou_batch, acc_batch = get_metric(y_pred, y_gt)
 
@@ -39,7 +39,7 @@ def train_epoch(model, data, opt, optimizer):
     return loss_epoch / num_data, miou_epoch / num_data, acc_epoch / num_data
 
 
-def test_epoch(model, data, gt_voting, opt, dataset):
+def test_epoch(model, data, opt):
     """
     Give prediction on test set
     """
@@ -50,10 +50,10 @@ def test_epoch(model, data, gt_voting, opt, dataset):
 
     model.eval()
     for batch in tqdm(data, desc='- (Testing)   ', leave=False):
-        wave, y_gt = map(lambda x: x.to(opt.device), batch)
+        images, y_gt = map(lambda x: x.to(opt.device), batch)
 
         """ training """
-        y_pred = model(wave, y_gt)
+        y_pred = model(images, y_gt)
         loss = get_loss(y_pred, y_gt)
         miou_batch, acc_batch = get_metric(y_pred, y_gt)
 
