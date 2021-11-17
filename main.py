@@ -108,7 +108,7 @@ def main():
 
         """ Validating """
         with torch.no_grad():
-            loss_val, miou_val, acc_val = test_epoch(model, valloader, val_gt_voting, opt, dataset='val')
+            loss_val, miou_val, acc_val = test_epoch(model, valloader, opt)
 
         print('\n- (Validating) Loss:{loss: 8.5f}, mIoU:{miou: 8.4f}, accuracy:{acc: 8.4f}'
               .format(loss=loss_val, miou=miou_val, acc=acc_val))
