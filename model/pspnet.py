@@ -26,9 +26,9 @@ class SpatialPyramidPool2D(nn.Module):
         return torch.cat((out1, out2), 1)
 
 
-class SPP_Resnet(nn.Module):
+class Backbone(nn.Module):
     def __init__(self, num_label, enable_spp=True):
-        super(SPP_Resnet, self).__init__()
+        super(Backbone, self).__init__()
 
         if enable_spp:
             arch = list(models.resnet50(pretrained=True).children())
@@ -54,7 +54,7 @@ class PSPNet(nn.Module):
         self.enable_spp = opt.enable_spp
         self.num_label = opt.num_label
 
-        self.spp_resnet = SPP_Resnet(self.num_label, enable_spp=self.enable_spp)
+        self.backbone = Backbone(self.num_label, enable_spp=self.enable_spp)
 
         # self.sincNet1 = nn.Sequential(
         #     nn.Conv2d(out_channels=160, kernel_size=251),
@@ -78,14 +78,16 @@ class PSPNet(nn.Module):
         """ Feature extraction """
         # x = self.layerNorm(x)
 
-        # feat1 = self.sincNet1(x)
-        # feat2 = self.sincNet2(x)
-        # feat3 = self.sincNet3(x)
-        #
+        x = self.backbone(x)
+
+        feat1 = self.sincNet1(x)
+        feat2 = self.sincNet2(x)
+        feat3 = self.sincNet3(x)
+        feat3 = self.sincNet3(x)
+
         # x = torch.cat((feat1.unsqueeze_(dim=1),
         #                feat2.unsqueeze_(dim=1),
         #                feat3.unsqueeze_(dim=1)), dim=1)
-        x = self.spp_resnet(x)
         return x
 
 

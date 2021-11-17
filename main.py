@@ -36,6 +36,7 @@ def main():
     parser.add_argument('--smooth_label', type=float, default=0.3)
 
     # Model ablation
+    parser.add_argument('--pooling_bin_size', type=list, default=[1, 2, 3, 6])
     parser.add_argument('--enable_spp', type=bool, default=False)
 
     # Augmentation
