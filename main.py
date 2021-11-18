@@ -20,7 +20,8 @@ def main():
     parser.add_argument('--note', type=str, default='Finish modeling flow.')
 
     # Model settings
-    parser.add_argument('--bin_sizes', type=list, default=[1, 2, 3, 6])
+    parser.add_argument('--bin_sizes', type=list, default=[2, 3, 6])
+    parser.add_argument('--pooling_dim', type=int, default=512)
     parser.add_argument('--enable_spp', type=bool, default=False)
     parser.add_argument('--recalculate_mean_std', type=bool, default=False)
 
@@ -29,7 +30,7 @@ def main():
     parser.add_argument('--es_patience', type=int, default=15)
     parser.add_argument('--gamma_steplr', type=float, default=np.sqrt(0.1))
     parser.add_argument('--epoch', type=int, default=200)
-    parser.add_argument('--num_workers', type=int, default=1)
+    parser.add_argument('--num_workers', type=int, default=0)
     parser.add_argument('--batch_size', type=int, default=1)
 
     # Settings need to be tuned
@@ -39,8 +40,7 @@ def main():
     parser.add_argument('--manual_lr', type=bool, default=False)  # Will override other lr
     parser.add_argument('--manual_lr_epoch', type=int, default=5)
     parser.add_argument('--smooth_label', type=float, default=0.3)
-
-
+    parser.add_argument('--alpha_loss', type=float, default=0.5)
 
     # Augmentation
     parser.add_argument('--enable_hvflip', type=float, default=0.5)  # enable horizontal and vertical flipping
@@ -49,6 +49,12 @@ def main():
     opt = parser.parse_args()
     opt.log = '_result/v' + opt.version + time.strftime("-%b_%d_%H_%M", time.localtime()) + '.txt'
     opt.device = torch.device('cuda')
+
+    # Model settings
+    if opt.backbone == 'resnet50':
+        opt.out_dim_resnet = 512
+    opt.seg_criterion = nn.CrossEntropyLoss().to(opt.device)
+    opt.cls_criterion = nn.BCEWithLogitsLoss().to(opt.device)
 
     # Print hyperparameters and settings
     print('\n[Info] Model settings:\n')
@@ -65,7 +71,7 @@ def main():
     """
     # Import data
     data_getter = getter_dataloader(opt)
-    opt.num_label, opt.h, opt.w = get_data_detail(opt.data)
+    (opt.num_label, opt.h, opt.w) = get_data_detail(opt.data)
 
     with open(opt.log, 'a') as f:
         f.write('\nEpoch, Time, loss_tr, miou_tr, acc_tr, loss_val, miou_val, acc_val\n')

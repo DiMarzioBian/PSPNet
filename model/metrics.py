@@ -37,11 +37,18 @@ def get_loss(y_pred, y_gt):
     """
     Calculate loss for back propagation.
     """
+
     return 0.5
 
 
-def get_metric(y_pred, y_gt):
+def get_metrics(y_pred, y_gt, num_label):
     """
-    Compute mIoU and per pixel accuracy.
+    Compute mean IoU and per pixel accuracy.
     """
-    return 0.5, 0.5
+    pa = y_pred.eq(y_gt).sum() / y_gt.numel()
+    miou = 0
+    return miou, pa
+
+
+
+

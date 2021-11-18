@@ -22,8 +22,6 @@ class ASSD(Dataset):
         """
         Instancelize GTZAN, indexing clips by enlarged indices and map label to integers.
         """
-        if std is None:
-            std = [0.3169534, 0.31788042, 0.31566283]
         self._walker = list_filename
         self.length = len(self._walker)
         self.path_img = os.path.join(root, 'original_images')
@@ -34,6 +32,10 @@ class ASSD(Dataset):
         self.augment_hvflip = augment_hvflip
         self.augment_wgn = augment_wgn
 
+        self.shrink_image = True
+        self.pre_transform = transforms.Compose([
+            transforms.Resize([400, 600])
+        ])
         self.train_transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize(mean=mean, std=std)
@@ -50,7 +52,7 @@ class ASSD(Dataset):
         """
         img = self.train_transform(np.array(Image.open(self._walker[index] + self.ext_img)) / 255)
         path_gt = self._walker[index][:11] + 'label_images_semantic' + self._walker[index][-4:] + self.ext_gt
-        gt = torch.Tensor(np.array(Image.open(path_gt)))
+        gt = torch.Tensor(np.array(Image.open(path_gt))).unsqueeze(0)
 
         # Augmentation
         if np.random.rand() < self.augment_hvflip:
@@ -68,6 +70,9 @@ class ASSD(Dataset):
         if self.augment_wgn > 0:
             img += torch.randn(img.shape) * self.augment_wgn
 
+        if self.shrink_image:
+            img = self.pre_transform(img)
+            gt = self.pre_transform(gt)
         return img.float(), gt.float()
 
 
@@ -77,8 +82,8 @@ def get_assd_dataloader(opt: argparse.Namespace, train_list: list, val_list: lis
     if opt.recalculate_mean_std:
         mean, std = get_mean_std(train_list)
     else:
-        mean = [0.64917991, 0.64219542, 0.61161699]
-        std = [0.20462199, 0.20038003, 0.2113568]
+        mean = [0.44619015, 0.44376444, 0.40185362]
+        std = [0.20309216, 0.19916435, 0.209552]
 
     # Instancelize datasets
     train_data = ASSD(list_filename=train_list, mean=mean, std=std, augment_hvflip=opt.enable_hvflip,
@@ -110,7 +115,10 @@ def get_mean_std(train_list):
             mean[ch] += img_ch.mean()
             std[ch] += img_ch.std()
 
-    return mean / len(train_list), std / len(train_list)
+    data_mean = mean / len(train_list)
+    data_std = std / len(train_list)
+    print('\n[info] Training data mean:', str(data_mean), 'and std:', str(data_std))
+    return data_mean, data_std
 
 
 
