@@ -42,8 +42,8 @@ class getter_dataloader(object):
         return train_loader, val_loader, testloader
 
 
-def get_num_label(dataset: str):
+def get_data_detail(dataset: str):
     if dataset == 'assd':
-        return 23
+        return 23, 4000, 6000
     else:
         raise RuntimeError('Dataset ' + dataset + ' not found!')

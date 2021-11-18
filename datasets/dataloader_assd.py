@@ -68,18 +68,17 @@ class ASSD(Dataset):
         if self.augment_wgn > 0:
             img += torch.randn(img.shape) * self.augment_wgn
 
-        return img, gt
+        return img.float(), gt.float()
 
 
 def get_assd_dataloader(opt: argparse.Namespace, train_list: list, val_list: list, test_list: list):
     """ Load data and prepare dataloader. """
     # Calculate mean and std
-    # mean, std = get_mean_std(train_list)
-    mean = [0.64917991, 0.64219542, 0.61161699]
-    std = [0.20462199, 0.20038003, 0.2113568 ]
-    print('mean', str(mean))
-
-    print('std', str(std))
+    if opt.recalculate_mean_std:
+        mean, std = get_mean_std(train_list)
+    else:
+        mean = [0.64917991, 0.64219542, 0.61161699]
+        std = [0.20462199, 0.20038003, 0.2113568]
 
     # Instancelize datasets
     train_data = ASSD(list_filename=train_list, mean=mean, std=std, augment_hvflip=opt.enable_hvflip,

@@ -1,93 +1,78 @@
 import math
-import torch
-
 import numpy as np
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torchvision.models as models
 
+from model.resnet import resnet34
+from model.layers import PyramidPoolingModule
 from model.metrics import LabelSmoothingLoss
 
 
-class SpatialPyramidPool2D(nn.Module):
-    def __init__(self):
-        super(SpatialPyramidPool2D, self).__init__()
-        self.local_avg_pool = nn.AdaptiveAvgPool2d(output_size=(2, 2))
-        self.global_avg_pool = nn.AdaptiveAvgPool2d(output_size=(1, 1))
-
-    def forward(self, x):
-        # local avg pooling, gives 512@2*2 feature
-        features_local = self.local_avg_pool(x)
-        # global avg pooling, gives 512@1*1 feature
-        features_pool = self.global_avg_pool(x)
-        # flatten and concatenate
-        out1 = features_local.view(features_local.size()[0], -1)
-        out2 = features_pool.view(features_pool.size()[0], -1)
-        return torch.cat((out1, out2), 1)
-
-
 class Backbone(nn.Module):
-    def __init__(self, num_label, enable_spp=True):
-        super(Backbone, self).__init__()
-
-        if enable_spp:
-            arch = list(models.resnet50(pretrained=True).children())
-            self.model = nn.Sequential(
-                nn.Sequential(*arch[:-3]),
-                arch[-3:-2][0][0],
-                nn.Sequential(*list(arch[-3:-2][0][1].children())[:-1]),
-                SpatialPyramidPool2D(),
-                nn.Linear(2560, num_label, bias=True)
-            )
-        else:
-            self.model = models.resnet18(pretrained=True)
-            self.model.fc = nn.Linear(512, num_label, bias=True)
+    def __init__(self, backbone, num_label):
+        super(Backbone,  self).__init__()
+        if backbone == 'resnet50':
+            self.model = resnet34(pretrained=True, replace_stride_with_dilation=[0, 2, 4])
 
     def forward(self, x):
         x = self.model(x)
         return x
 
 
+class Classifier(nn.Module):
+    def __init__(self, num_label):
+        super(Classifier,  self).__init__()
+        self.model = nn.Sequential(
+            nn.Conv2d(4096, 512, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(512, momentum=.95),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.1),
+            nn.Conv2d(512, num_label, kernel_size=1),
+        )
+        self.init_weights()
+
+    def forward(self, x):
+        x = self.model(x)
+        return x
+
+    def init_weights(self):
+        """
+        Initialize layer weights.
+        """
+        for layer in self.model:
+            if isinstance(layer, (nn.Conv2d, nn.Linear)):
+                nn.init.xavier_normal_(layer.weight)
+                if layer.bias is not None:
+                    layer.bias.data.zero_()
+            elif isinstance(layer, nn.BatchNorm2d):
+                layer.weight.data.fill_(1)
+                layer.bias.data.zero_()
+
+
 class PSPNet(nn.Module):
-    def __init__(self, opt):
+    def __init__(self,
+                 opt,
+                 psp_size=2048,
+                 deep_features_size=1024,
+                 ):
         super(PSPNet, self).__init__()
         self.enable_spp = opt.enable_spp
         self.num_label = opt.num_label
+        self.backbone = opt.backbone
 
-        self.backbone = Backbone(self.num_label, enable_spp=self.enable_spp)
+        # Overrider Resnet official code, add dilation at BasicBlock 3 and 4 according to paper
+        self.backbone = Backbone(self.backbone, self.num_label)
 
-        # self.sincNet1 = nn.Sequential(
-        #     nn.Conv2d(out_channels=160, kernel_size=251),
-        #     nn.BatchNorm1d(160),
-        #     nn.ReLU(inplace=True),
-        #     nn.AdaptiveAvgPool1d(1024))
-        # self.sincNet2 = nn.Sequential(
-        #     nn.Conv2d(out_channels=160, kernel_size=501),
-        #     nn.BatchNorm1d(160),
-        #     nn.ReLU(inplace=True),
-        #     nn.AdaptiveAvgPool1d(1024))
-        # self.sincNet3 = nn.Sequential(
-        #     nn.Conv2d(out_channels=160, kernel_size=1001),
-        #     nn.BatchNorm1d(160),
-        #     nn.ReLU(inplace=True),
-        #     nn.AdaptiveAvgPool1d(1024))
+        self.pyramid_pooling = PyramidPoolingModule(opt, in_dim=2048, out_dim=512)
+        self.pyramid_pooling.init_weights()
 
-        self.calc_loss = LabelSmoothingLoss(opt.smooth_label, opt.num_label)
+        self.classifier = Classifier(self.num_label)
 
-    def forward(self, x):
-        """ Feature extraction """
-        # x = self.layerNorm(x)
-
+    def forward(self, x, x2):
         x = self.backbone(x)
-
-        feat1 = self.sincNet1(x)
-        feat2 = self.sincNet2(x)
-        feat3 = self.sincNet3(x)
-        feat3 = self.sincNet3(x)
-
-        # x = torch.cat((feat1.unsqueeze_(dim=1),
-        #                feat2.unsqueeze_(dim=1),
-        #                feat3.unsqueeze_(dim=1)), dim=1)
+        x = self.pyramid_pooling(x)
+        x = self.classifier(x)
         return x
 
 
