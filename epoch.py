@@ -68,6 +68,6 @@ def test_epoch(model, data, opt):
 
         loss_epoch += loss_batch * images.shape[0]
         miou_epoch += miou_batch * images.shape[0]
-        pa_epoch += pa_epoch * images.shape[0]
+        pa_epoch += pa_batch * images.shape[0]
 
     return loss_epoch / num_data, miou_epoch / num_data, pa_epoch / num_data

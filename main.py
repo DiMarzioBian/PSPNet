@@ -1,4 +1,3 @@
-from model.pspnet import *
 import argparse
 import numpy as np
 import time
@@ -66,7 +65,6 @@ def main():
         opt.out_dim_pooling = 2048
 
     opt.seg_criterion = nn.CrossEntropyLoss().to(opt.device)
-    opt.cls_criterion = nn.BCEWithLogitsLoss().to(opt.device)
 
     # Print hyperparameters and settings
     print('\n[Info] Model settings:\n')
@@ -86,7 +84,7 @@ def main():
     (opt.num_label, opt.h, opt.w) = get_data_detail(opt.data)
 
     with open(opt.log, 'a') as f:
-        f.write('\nEpoch, Time, loss_tr, loss_aux_tr, miou_tr, acc_tr, loss_val, miou_val, acc_val\n')
+        f.write('\nEpoch, Time, loss_tr, loss_aux_tr, miou_tr, pa_tr, loss_val, miou_val, pa_val\n')
 
     # Load model
     model = PSPNet(opt)
@@ -102,7 +100,6 @@ def main():
 
     # Define logging variants
     loss_best = 1e9
-    aux_best = 1e9
     miou_best = 0
     pa_best = 0
 
@@ -135,7 +132,7 @@ def main():
         with torch.no_grad():
             loss_val, miou_val, pa_val = test_epoch(model, valloader, opt)
 
-        print('\n- (Validating) Loss:{loss: 8.5f}, mIoU:{miou: 8.4f}, accuracy:{pa: 8.4f}'
+        print('\n- (Validating) Loss:{loss: 8.5f}, mIoU:{miou: 8.4f}, pa:{pa: 8.4f}'
               .format(loss=loss_val, miou=miou_val, pa=pa_val))
 
         """ Logging """
@@ -166,12 +163,12 @@ def main():
             print("\n- Warming up learning rate.")
 
     print("\n[Info] Training stopped with best loss: {loss_best: 8.5f}, best miou: {miou_best: 8.4f} "
-          "and best accuracy: {pa_best: 8.4f}\n"
+          "and best pa: {pa_best: 8.4f}\n"
           .format(loss_best=loss_best, miou_best=miou_best, pa_best=pa_best), )
 
     with open(opt.log, 'a') as f:
         f.write("\n[Info] Training stopped with best loss: {loss_best: 8.5f}, best miou: {miou_best: 8.4f} "
-                "and best accuracy: {pa_best: 8.4f}"
+                "and best pa: {pa_best: 8.4f}"
                 .format(loss_best=loss_best, miou_best=miou_best, pa_best=pa_best), )
 
 
