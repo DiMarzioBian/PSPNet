@@ -41,10 +41,12 @@ def get_loss(y_pred, y_gt):
     return 0.5
 
 
-def get_metrics(y_pred, y_gt, num_label):
+def get_metrics(y_score, y_gt, num_label):
     """
     Compute mean IoU and per pixel accuracy.
     """
+
+    y_pred = y_score.argmax(1).unsqueeze(1)
     pa = y_pred.eq(y_gt).sum() / y_gt.numel()
     miou = 0
     return miou, pa

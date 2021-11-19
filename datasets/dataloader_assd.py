@@ -16,8 +16,9 @@ class ASSD(Dataset):
                  list_filename: list,
                  mean,
                  std,
-                 augment_hvflip: float,
-                 augment_wgn: float,
+                 shrink_image,
+                 augment_hvflip: float = 0,
+                 augment_wgn: float = 0,
                  root: str = '_data/assd/'):
         """
         Instancelize GTZAN, indexing clips by enlarged indices and map label to integers.
@@ -29,13 +30,14 @@ class ASSD(Dataset):
         self.ext_img = '.jpg'
         self.ext_gt = '.png'
 
+        self.shrink_image = shrink_image
         self.augment_hvflip = augment_hvflip
         self.augment_wgn = augment_wgn
 
-        self.shrink_image = True
-        self.pre_transform = transforms.Compose([
-            transforms.Resize([400, 600])
-        ])
+        if self.shrink_image:
+            self.pre_transform = transforms.Compose([
+                transforms.Resize(self.shrink_image, transforms.InterpolationMode.NEAREST)
+            ])
         self.train_transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize(mean=mean, std=std)
@@ -86,12 +88,12 @@ def get_assd_dataloader(opt: argparse.Namespace, train_list: list, val_list: lis
         std = [0.20309216, 0.19916435, 0.209552]
 
     # Instancelize datasets
-    train_data = ASSD(list_filename=train_list, mean=mean, std=std, augment_hvflip=opt.enable_hvflip,
-                      augment_wgn=opt.enable_hvflip)
+    train_data = ASSD(list_filename=train_list, mean=mean, std=std, shrink_image=opt.shrink_image,
+                      augment_hvflip=opt.enable_hvflip, augment_wgn=opt.enable_hvflip)
 
-    val_data = ASSD(list_filename=val_list, mean=mean, std=std, augment_hvflip=0, augment_wgn=0)
+    val_data = ASSD(list_filename=val_list, mean=mean, std=std, shrink_image=opt.shrink_image)
 
-    test_data = ASSD(list_filename=test_list, mean=mean, std=std, augment_hvflip=0, augment_wgn=0)
+    test_data = ASSD(list_filename=test_list, mean=mean, std=std, shrink_image=opt.shrink_image)
 
     # Instancelize dataloader
     train_loader = DataLoader(train_data, batch_size=opt.batch_size, num_workers=opt.num_workers, shuffle=True)

@@ -232,10 +232,10 @@ class ResNet(nn.Module):
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
-        x_auxiliary = x.clone()
+        x_aux = x.clone()
         x = self.layer4(x)
 
-        return x, x_auxiliary
+        return x, x_aux
 
     def forward(self, x: Tensor) -> tuple:
         return self._forward_impl(x)

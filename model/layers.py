@@ -2,6 +2,19 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from utils import init_weights
+
+
+def make_layer(in_dim, out_dim, bin_size):
+    if bin_size == 1:
+        raise RuntimeError('\n[warning] Bin_size 1 hasn\'t been implemented.')
+    else:
+        return nn.Sequential(
+            nn.AdaptiveAvgPool2d(output_size=(bin_size, bin_size)),
+            nn.Conv2d(in_dim, out_dim, kernel_size=(1, 1), bias=False),
+            nn.BatchNorm2d(out_dim, momentum=.95),
+            nn.ReLU(inplace=True))
+
 
 class PyramidPoolingModule(nn.Module):
     """
@@ -15,8 +28,9 @@ class PyramidPoolingModule(nn.Module):
         self.num_label = opt.num_label
 
         self.modules_list = nn.ModuleList()
-        self.modules_list = nn.ModuleList([self._make_stage(in_dim, out_dim, bin_size) for bin_size in self.bin_sizes])
-        self.init_weights()
+        self.modules_list = nn.ModuleList([make_layer(in_dim, out_dim, bin_size) for bin_size in self.bin_sizes])
+        for module in self.modules_list:
+            init_weights(module)
 
     def forward(self, in_feats):
 
@@ -30,24 +44,3 @@ class PyramidPoolingModule(nn.Module):
         # out_feats = [F.interpolate(stage(in_feats), size=[h, w], mode='bilinear') for stage in self.modules_list]
 
         return torch.cat(out_feats, 1)
-
-    def init_weights(self):
-        """
-        Initialize layer weights.
-        """
-        for module in self.modules_list:
-            for layer in module:
-                if isinstance(module, nn.Conv2d):
-                    nn.init.xavier_normal_(layer.weight)
-                    if layer.bias is not None:
-                        layer.bias.data.zero_()
-                elif isinstance(layer, nn.BatchNorm2d):
-                    layer.weight.data.fill_(1)
-                    layer.bias.data.zero_()
-
-    def _make_stage(self, in_dim, out_dim, bin_size):
-        return nn.Sequential(
-            nn.AdaptiveAvgPool2d(output_size=(bin_size, bin_size)),
-            nn.Conv2d(in_dim, out_dim, kernel_size=(1, 1), bias=False),
-            nn.BatchNorm2d(out_dim, momentum=.95),
-            nn.ReLU(inplace=True))

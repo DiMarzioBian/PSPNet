@@ -16,6 +16,7 @@ def train_epoch(model, data, opt, optimizer):
     """
     num_data = data.dataset.length
     loss_epoch = 0
+    loss_aux_epoch = 0
     miou_epoch = 0
     pa_epoch = 0
 
@@ -24,24 +25,26 @@ def train_epoch(model, data, opt, optimizer):
         images, y_gt = map(lambda x: x.to(opt.device), batch)
 
         """ training """
-        y_score, y_score_auxiliary = model(images)
+        y_score, y_score_aux = model(images)
 
         loss_batch = opt.seg_criterion(y_score, y_gt.squeeze(1).long())
-        loss_auxiliary_batch = opt.seg_criterion(y_score_auxiliary, y_gt.squeeze(1).long())
-        loss = loss_batch + opt.alpha_loss * loss_auxiliary_batch
+        if opt.enable_aux:
+            loss_aux_batch = opt.seg_criterion(y_score_aux, y_gt.squeeze(1).long())
+
+        loss = loss_batch + opt.alpha_loss * loss_aux_batch
 
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
 
-        y_pred = y_score.argmax(1)
-        miou_batch, pa_batch = get_metrics(y_pred, y_gt, opt.num_label)
+        miou_batch, pa_batch = get_metrics(y_score, y_gt, opt.num_label)
 
         loss_epoch += loss_batch * images.shape[0]
+        loss_aux_epoch += loss_aux_batch * images.shape[0]
         miou_epoch += miou_batch * images.shape[0]
         pa_epoch += pa_batch * images.shape[0]
 
-    return loss_epoch / num_data, miou_epoch / num_data, pa_epoch / num_data
+    return loss_epoch / num_data, loss_aux_epoch / num_data, miou_epoch / num_data, pa_epoch / num_data
 
 
 def test_epoch(model, data, opt):
@@ -58,11 +61,10 @@ def test_epoch(model, data, opt):
         images, y_gt = map(lambda x: x.to(opt.device), batch)
 
         """ training """
-        y_score, _ = model.test(images)
+        y_score = model.test(images)
         loss_batch = opt.seg_criterion(y_score, y_gt.squeeze(1).long())
 
-        y_pred = y_score.argmax(1)
-        miou_batch, pa_batch = get_metrics(y_pred, y_gt, opt.num_label)
+        miou_batch, pa_batch = get_metrics(y_score, y_gt, opt.num_label)
 
         loss_epoch += loss_batch
         miou_epoch += miou_batch
