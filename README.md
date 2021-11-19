@@ -13,7 +13,7 @@ python main.py
 ### Goal
 To test performance of PSPNet on Aerial Semantic Segmentation Drone (ASSD) Dataset
 
-Link: https://www.kaggle.com/bulentsiyah/semantic-drone-dataset/code
+Link: https://www.kaggle.com/bulentsiyah/semantic-drone-dataset
 
 You have to unzip it first and move children folders out of 'dataset' folder.
 

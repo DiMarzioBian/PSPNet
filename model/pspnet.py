@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from model.resnet import resnet34
+from model.resnet import *
 from model.layers import PyramidPoolingModule
 from model.metrics import LabelSmoothingLoss
 
@@ -14,10 +14,12 @@ from utils import init_weights
 class Backbone(nn.Module):
     def __init__(self, backbone):
         super(Backbone,  self).__init__()
+        if backbone == 'resnet18':
+            self.model = resnet18(pretrained=True, replace_stride_with_dilation=[0, 2, 4])
         if backbone == 'resnet34':
             self.model = resnet34(pretrained=True, replace_stride_with_dilation=[0, 2, 4])
-        if backbone == 'resnet18':
-            self.model = resnet34(pretrained=True, replace_stride_with_dilation=[0, 2, 4])
+        if backbone == 'resnet50':
+            self.model = resnet50(pretrained=True, replace_stride_with_dilation=[0, 2, 4])
 
     def forward(self, x):
         x, x_auxiliary = self.model(x)
