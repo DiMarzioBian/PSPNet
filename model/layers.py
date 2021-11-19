@@ -12,7 +12,6 @@ def make_layer(in_dim, out_dim, bin_size):
             nn.Flatten(start_dim=1),
             nn.Linear(in_dim, out_dim, bias=False),
             nn.Unflatten(1, (out_dim, 1, 1)),
-            nn.BatchNorm2d(out_dim, momentum=.95),
             nn.ReLU(inplace=True))
     else:
         return nn.Sequential(
