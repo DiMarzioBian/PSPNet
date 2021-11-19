@@ -16,8 +16,8 @@ def main():
     Preparation
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('--version', type=str, default='0.6')
-    parser.add_argument('--note', type=str, default='Everything done expect mIoU.')
+    parser.add_argument('--version', type=str, default='1.0')
+    parser.add_argument('--note', type=str, default='')
 
     # Model settings
     parser.add_argument('--shrink_image', type=list, default=[400, 600])
