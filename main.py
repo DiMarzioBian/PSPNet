@@ -30,8 +30,8 @@ def main():
     parser.add_argument('--es_patience', type=int, default=15)
     parser.add_argument('--gamma_steplr', type=float, default=np.sqrt(0.1))
     parser.add_argument('--epoch', type=int, default=100)
-    parser.add_argument('--num_workers', type=int, default=0)
-    parser.add_argument('--batch_size', type=int, default=1)
+    parser.add_argument('--num_workers', type=int, default=1)
+    parser.add_argument('--batch_size', type=int, default=8)
 
     # Settings need to be tuned
     parser.add_argument('--backbone', type=str, default='resnet18')  # Num of cross validation folds
