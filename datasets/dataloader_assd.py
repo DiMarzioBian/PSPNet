@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 import torch
 from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
+from torchvision import transforms as T
 
 
 class ASSD(Dataset):
@@ -34,16 +34,17 @@ class ASSD(Dataset):
         self.augment_hvflip = augment_hvflip
         self.augment_wgn = augment_wgn
 
-        if self.shrink_image:
-            self.pre_transform = transforms.Compose([
-                transforms.Resize(self.shrink_image, transforms.InterpolationMode.NEAREST)
-            ])
-        self.train_transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=mean, std=std)
+        self.train_transform = T.Compose([
+            T.ToTensor(),
+            T.Normalize(mean=mean, std=std)
         ])
-        self.h_flip = transforms.RandomHorizontalFlip(p=1.0)
-        self.v_flip = transforms.RandomVerticalFlip(p=1.0)
+        if self.shrink_image:
+            self.pre_transform = T.Compose([
+                T.Resize(self.shrink_image, T.InterpolationMode.NEAREST)
+            ])
+
+        self.h_flip = T.RandomHorizontalFlip(p=1.0)
+        self.v_flip = T.RandomVerticalFlip(p=1.0)
 
     def __len__(self):
         return self.length

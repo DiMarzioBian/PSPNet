@@ -1,14 +1,10 @@
-from model.pspnet import *
 import argparse
 import numpy as np
-import time
+
+from PIL import Image
 import torch
-import torch.nn as nn
-import torch.optim as optim
+from torchvision import transforms as T
 from model.pspnet import PSPNet
-from datasets import getter_dataloader, get_data_detail
-from epoch import train_epoch, test_epoch
-from utils import set_optimizer_lr, update_optimizer_lr
 
 
 def main():
@@ -16,9 +12,16 @@ def main():
     Preparation
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('--shrink_image', type=list, default=(400, 600))
+    # Model settings
+    parser.add_argument('--shrink_image', type=list, default=[400, 600])
+    # Settings need to be tuned
     parser.add_argument('--backbone', type=str, default='resnet18')  # Num of cross validation folds
     parser.add_argument('--data', default='assd')
+    parser.add_argument('--bin_sizes', type=list, default=[2, 3, 6])
+    parser.add_argument('--enable_aux', type=bool, default=True)
+    parser.add_argument('--alpha_loss', type=float, default=0.4)
+
+    parser.add_argument('--name_mode_dict', default='x')
 
     opt = parser.parse_args()
     opt.device = torch.device('cuda')
@@ -37,54 +40,35 @@ def main():
         opt.out_dim_resnet_auxiliary = 1024
         opt.out_dim_pooling = 2048
 
-
-    data_getter = getter_dataloader(opt)
-    (opt.num_label, opt.h, opt.w) = get_data_detail(opt.data)
-
-    with open(opt.log, 'a') as f:
-        f.write('\nEpoch, Time, loss_tr, loss_aux_tr, miou_tr, acc_tr, loss_val, miou_val, acc_val\n')
-
     # Load model
     model = PSPNet(opt)
+    model.load_state_dict('_result/model/'+opt.name_mode_dict)
     model = model.to(opt.device)
-    optimizer = optim.SGD(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr, momentum=0.9,
-                          weight_decay=opt.l2_reg, nesterov=True)
-    if not opt.manual_lr:
-        scheduler = optim.lr_scheduler.StepLR(optimizer, int(opt.lr_patience), gamma=opt.gamma_steplr)
+    train_transform = T.Compose([
+        T.ToTensor(),
+        T.Normalize(mean=[0.44619015, 0.44376444, 0.40185362], std=[0.20309216, 0.19916435, 0.209552])
+    ])
+    if opt.shrink_image:
+        pre_transform = T.Compose([
+            T.Resize(opt.shrink_image, T.InterpolationMode.NEAREST)
+        ])
 
-    # Load data
-    print('\n[Info] Loading data...')
-    trainloader, valloader, val_gt_voting = data_getter.get()
+    # Load images
 
-    # Define logging variants
-    loss_best = 1e9
-    aux_best = 1e9
-    miou_best = 0
-    pa_best = 0
+    index = '000'
+    path_gt = '_data/assd/label_images_semantic/' + index + '.png'
 
-    for epoch in range(1, opt.epoch + 1):
-        print('\n[ Epoch {epoch}]'.format(epoch=epoch))
+    image = train_transform(np.array(Image.open(index + '.jpg')) / 255)
+    gt = torch.Tensor(np.array(Image.open(path_gt)))
 
-        # """ Training """
-        start = time.time()
+    if opt.shrink_image:
+        image = pre_transform(image)
+        gt = pre_transform(gt)
 
-        if opt.manual_lr and epoch <= opt.manual_lr_epoch:
-            set_optimizer_lr(optimizer, 1e-5)
-        elif opt.manual_lr and epoch == (opt.manual_lr_epoch + 1):
-            set_optimizer_lr(optimizer, 5e-3)
-        elif opt.manual_lr and (epoch - opt.manual_lr_epoch) % 30 == 0:
-            update_optimizer_lr(optimizer)
+    # Predicting labels
+    y_score, y_score_aux = model(image)
 
-        loss_train, loss_aux_train, miou_train, pa_train = train_epoch(model, trainloader, opt, optimizer)
-
-        if not opt.manual_lr:
-            scheduler.step()
-
-        end = time.time()
-
-        """ Validating """
-        with torch.no_grad():
-            loss_val, miou_val, pa_val = test_epoch(model, valloader, opt)
+    # Plot
 
 
 if __name__ == '__main__':

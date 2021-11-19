@@ -14,6 +14,7 @@ def update_optimizer_lr(optimizer):
 
 
 def init_weights(model):
+    """Initialize layer weights"""
     for layer in model:
         if isinstance(layer, nn.Conv2d) or isinstance(layer, nn.Linear):
             nn.init.xavier_normal_(layer.weight)
