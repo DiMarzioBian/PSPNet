@@ -22,6 +22,7 @@ def main():
     parser.add_argument('--shrink_image', type=list, default=[400, 600])
     parser.add_argument('--enable_spp', type=bool, default=False)
     parser.add_argument('--recalculate_mean_std', type=bool, default=False)
+    parser.add_argument('--save_dict', type=bool, default=True)
 
     parser.add_argument('--lr_patience', type=int, default=10)
     parser.add_argument('--l2_reg', type=float, default=1e-5)
@@ -49,6 +50,9 @@ def main():
     opt = parser.parse_args()
     opt.log = '_result/v' + opt.version + time.strftime("-%b_%d_%H_%M", time.localtime()) + '.txt'
     opt.device = torch.device('cuda')
+
+    if opt.save_dict:
+        opt.dict_path = '_result/model/v' + opt.version + time.strftime("-%b_%d_%H_%M", time.localtime()) + '.pkl'
 
     # Model settings
     if opt.backbone == 'resnet18':
