@@ -51,19 +51,21 @@ def test_epoch(model, data, opt):
     num_data = data.dataset.length
     loss_epoch = 0
     miou_epoch = 0
-    acc_epoch = 0
+    pa_epoch = 0
 
     model.eval()
     for batch in tqdm(data, desc='- (Testing)   ', leave=False):
         images, y_gt = map(lambda x: x.to(opt.device), batch)
 
         """ training """
-        y_score, y_scored_auxiliary = model(images, y_gt)
-        loss_batch = get_loss(y_score, y_gt)
-        miou_batch, acc_batch = get_metric(y_score, y_gt)
+        y_score, _ = model.test(images)
+        loss_batch = opt.seg_criterion(y_score, y_gt.squeeze(1).long())
 
-        loss_epoch += loss
+        y_pred = y_score.argmax(1)
+        miou_batch, pa_batch = get_metrics(y_pred, y_gt, opt.num_label)
+
+        loss_epoch += loss_batch
         miou_epoch += miou_batch
-        acc_epoch += acc_batch
+        pa_epoch += pa_epoch
 
-    return loss_epoch / num_data, miou_epoch / num_data, acc_epoch / num_data
+    return loss_epoch / num_data, miou_epoch / num_data, pa_epoch / num_data

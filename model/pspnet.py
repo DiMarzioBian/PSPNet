@@ -60,7 +60,7 @@ class Classifier_auxiliary(nn.Module):
         self.init_weights()
 
     def forward(self, x):
-        x = self.model(x)
+        x = self.conv(x)
         return x
 
     def init_weights(self):
@@ -89,7 +89,7 @@ class PSPNet(nn.Module):
         self.classifier = Classifier(in_dim=in_dim_classifier, mid_dim=512, num_label=self.num_label)
         if opt.backbone == 'resnet50':
             in_dim_auxiliary = 256
-        self.classifier_auxiliary = Classifier_auxiliary(in_dim=in_dim_classifier, num_label=self.num_label)
+        self.classifier_auxiliary = Classifier_auxiliary(in_dim=in_dim_auxiliary, num_label=self.num_label)
 
     def forward(self, img):
         x, x_auxiliary = self.backbone(img)
@@ -100,6 +100,13 @@ class PSPNet(nn.Module):
         x = nn.functional.interpolate(x, img.shape[2:], mode='bilinear', align_corners=False)
         x_auxiliary = nn.functional.interpolate(x_auxiliary, img.shape[2:], mode='bilinear', align_corners=False)
         return x, x_auxiliary
+
+    def test(self, img):
+        x, _ = self.backbone(img)
+        x = self.pyramid_pooling(x)
+        x = self.classifier(x)
+        x = nn.functional.interpolate(x, img.shape[2:], mode='bilinear', align_corners=False)
+        return x
 
 
 
