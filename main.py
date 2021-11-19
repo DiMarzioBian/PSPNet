@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 import time
+import pickle
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -29,13 +30,13 @@ def main():
     parser.add_argument('--es_patience', type=int, default=15)
     parser.add_argument('--gamma_steplr', type=float, default=np.sqrt(0.1))
     parser.add_argument('--epoch', type=int, default=100)
-    parser.add_argument('--num_workers', type=int, default=0)
-    parser.add_argument('--batch_size', type=int, default=2)
+    parser.add_argument('--num_workers', type=int, default=1)
+    parser.add_argument('--batch_size', type=int, default=8)
 
     # Settings need to be tuned
     parser.add_argument('--backbone', type=str, default='resnet18')  # Num of cross validation folds
     parser.add_argument('--data', default='assd')
-    parser.add_argument('--bin_sizes', type=list, default=[2, 3, 6])
+    parser.add_argument('--bin_sizes', type=list, default=[1, 2, 3, 6])
     parser.add_argument('--lr', type=float, default=1e-2)
     parser.add_argument('--manual_lr', type=bool, default=False)  # Will override other lr
     parser.add_argument('--manual_lr_epoch', type=int, default=5)
@@ -52,7 +53,7 @@ def main():
     opt.device = torch.device('cuda')
 
     if opt.save_dict:
-        opt.dict_path = '_result/model/v' + opt.version + time.strftime("-%b_%d_%H_%M", time.localtime()) + '.pkl'
+        opt.state_dict_path = '_result/model/v' + opt.version + time.strftime("-%b_%d_%H_%M", time.localtime()) + '.pkl'
 
     # Model settings
     if opt.backbone == 'resnet18':
@@ -106,6 +107,7 @@ def main():
     loss_best = 1e9
     miou_best = 0
     pa_best = 0
+    model_best = None
 
     for epoch in range(1, opt.epoch + 1):
         print('\n[ Epoch {epoch}]'.format(epoch=epoch))
@@ -153,6 +155,7 @@ def main():
                 loss_best = loss_val
                 miou_best = miou_val
                 pa_best = pa_val
+                model_best = model.state_dict().copy()
 
                 patience = 0
                 print("\n- New best performance logged.")
@@ -165,6 +168,10 @@ def main():
                     break
         else:
             print("\n- Warming up learning rate.")
+
+    # Save state dict of best model
+    with open(opt.state_dict_path, 'wb') as f:
+        pickle.dump(model_best, f)
 
     print("\n[Info] Training stopped with best loss: {loss_best: 8.5f}, best miou: {miou_best: 8.4f} "
           "and best pa: {pa_best: 8.4f}\n"

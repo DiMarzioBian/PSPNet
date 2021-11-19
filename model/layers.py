@@ -7,7 +7,13 @@ from utils import init_weights
 
 def make_layer(in_dim, out_dim, bin_size):
     if bin_size == 1:
-        raise RuntimeError('\n[warning] Bin_size 1 hasn\'t been implemented.')
+        return nn.Sequential(
+            nn.AdaptiveAvgPool2d(output_size=(bin_size, bin_size)),
+            nn.Flatten(start_dim=1),
+            nn.Linear(in_dim, out_dim, bias=False),
+            nn.Unflatten(1, (out_dim, 1, 1)),
+            nn.BatchNorm2d(out_dim, momentum=.95),
+            nn.ReLU(inplace=True))
     else:
         return nn.Sequential(
             nn.AdaptiveAvgPool2d(output_size=(bin_size, bin_size)),
@@ -20,7 +26,7 @@ class PyramidPoolingModule(nn.Module):
     """
     Pyramid pooling modules, takes bin_sizes to make parallel pooling layer
     """
-    def __init__(self, opt, in_dim, out_dim=512):
+    def __init__(self, opt, in_dim, out_dim):
         super(PyramidPoolingModule, self).__init__()
         self.bin_sizes = opt.bin_sizes
         self.w = opt.w
