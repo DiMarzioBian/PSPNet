@@ -38,8 +38,6 @@ def main():
     parser.add_argument('--data', default='assd')
     parser.add_argument('--bin_sizes', type=list, default=[1, 2, 3, 6])
     parser.add_argument('--lr', type=float, default=1e-2)
-    parser.add_argument('--manual_lr', type=bool, default=False)  # Will override other lr
-    parser.add_argument('--manual_lr_epoch', type=int, default=5)
     parser.add_argument('--smooth_label', type=float, default=0.3)
     parser.add_argument('--enable_aux', type=bool, default=True)
     parser.add_argument('--alpha_loss', type=float, default=0.4)
@@ -96,8 +94,7 @@ def main():
     model = model.to(opt.device)
     optimizer = optim.SGD(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr, momentum=0.9,
                           weight_decay=opt.l2_reg, nesterov=True)
-    if not opt.manual_lr:
-        scheduler = optim.lr_scheduler.StepLR(optimizer, int(opt.lr_patience), gamma=opt.gamma_steplr)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, int(opt.lr_patience), gamma=opt.gamma_steplr)
 
     # Load data
     print('\n[Info] Loading data...')
@@ -115,17 +112,9 @@ def main():
         # """ Training """
         start = time.time()
 
-        if opt.manual_lr and epoch <= opt.manual_lr_epoch:
-            set_optimizer_lr(optimizer, 1e-5)
-        elif opt.manual_lr and epoch == (opt.manual_lr_epoch + 1):
-            set_optimizer_lr(optimizer, 5e-3)
-        elif opt.manual_lr and (epoch - opt.manual_lr_epoch) % 30 == 0:
-            update_optimizer_lr(optimizer)
-
         loss_train, loss_aux_train, miou_train, pa_train = train_epoch(model, trainloader, opt, optimizer)
 
-        if not opt.manual_lr:
-            scheduler.step()
+        scheduler.step()
 
         end = time.time()
 
@@ -150,24 +139,21 @@ def main():
                             pa_val=pa_val), )
 
         """ Early stopping """
-        if epoch > opt.manual_lr_epoch:
-            if miou_val > miou_best or (miou_val == miou_best) & (loss_val <= loss_best):
-                loss_best = loss_val
-                miou_best = miou_val
-                pa_best = pa_val
-                model_best = model.state_dict().copy()
+        if miou_val > miou_best or (miou_val == miou_best) & (loss_val <= loss_best):
+            loss_best = loss_val
+            miou_best = miou_val
+            pa_best = pa_val
+            model_best = model.state_dict().copy()
 
-                patience = 0
-                print("\n- New best performance logged.")
-            else:
-                patience += 1
-                print("\n- Early stopping patience counter {} of {}".format(patience, opt.es_patience))
-
-                if patience == opt.es_patience:
-                    print("\n[Info] Stop training")
-                    break
+            patience = 0
+            print("\n- New best performance logged.")
         else:
-            print("\n- Warming up learning rate.")
+            patience += 1
+            print("\n- Early stopping patience counter {} of {}".format(patience, opt.es_patience))
+
+            if patience == opt.es_patience:
+                print("\n[Info] Stop training")
+                break
 
     # Save state dict of best model
     with open(opt.state_dict_path, 'wb') as f:
