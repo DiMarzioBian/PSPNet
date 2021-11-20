@@ -29,6 +29,7 @@ You have to unzip it first and move children folders out of 'dataset' folder.
             |-- class_dict_seg.csv
     |-- _result
         |-- model
+            |-- demo.pkl
     |-- _demo_img
     |-- datasets
         |-- __init__.py

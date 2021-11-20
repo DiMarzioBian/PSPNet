@@ -9,6 +9,9 @@ from model.pspnet import PSPNet
 from datasets import getter_dataloader, get_data_detail
 from epoch import train_epoch, test_epoch
 from utils import set_optimizer_lr, update_optimizer_lr
+import os
+from dhooks import Webhook, Embed
+import socket
 
 
 def main():
@@ -30,7 +33,7 @@ def main():
     parser.add_argument('--gamma_steplr', type=float, default=0.5)
     parser.add_argument('--epoch', type=int, default=100)
     parser.add_argument('--num_workers', type=int, default=1)
-    parser.add_argument('--batch_size', type=int, default=16)
+    parser.add_argument('--batch_size', type=int, default=2)
 
     # Settings need to be tuned
     parser.add_argument('--backbone', type=str, default='resnet18')  # Num of cross validation folds
@@ -42,7 +45,7 @@ def main():
 
     # Augmentation
     parser.add_argument('--enable_hvflip', type=float, default=0.0)  # enable horizontal and vertical flipping
-    parser.add_argument('--enable_wgn', type=float, default=0.0)  # apply white Gaussian noise
+    parser.add_argument('--enable_resize', type=float, default=0.0)  # apply white Gaussian noise
 
     opt = parser.parse_args()
     opt.log = '_result/v' + opt.version + time.strftime("-%b_%d_%H_%M", time.localtime()) + '.txt'
@@ -190,6 +193,33 @@ def main():
                 "and best pa: {pa_best: 8.4f}"
                 .format(loss_best=loss_best, miou_best=miou_best, pa_best=pa_best), )
 
+    # Send discord webhook
+    send_webhook(loss_best, miou_best, pa_best)
+
+
+def send_webhook(loss=0, miou=0, pa=0, name_project=None):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    ip = s.getsockname()[0]
+    s.close()
+    print(ip)
+
+    if not name_project:
+        name_project = os.getcwd().split('\\')[-1]
+
+    hook = Webhook(
+        "x")
+    embed = Embed(
+        description=name_project + ' finishes training.',
+        color=0x00FF00,
+        timestamp='now'
+    )
+    embed.set_author(name=ip)
+    embed.add_field(name='Loss', value=str(loss))
+    embed.add_field(name='mIoU', value=str(miou))
+    embed.add_field(name='Pixel acc', value=str(pa))
+    hook.send(embed=embed)
+
 
 if __name__ == '__main__':
     seed = 0
@@ -197,3 +227,5 @@ if __name__ == '__main__':
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     main()
+
+

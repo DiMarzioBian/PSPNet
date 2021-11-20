@@ -18,7 +18,7 @@ class ASSD(Dataset):
                  std,
                  shrink_image,
                  augment_hvflip: float = 0,
-                 augment_wgn: float = 0,
+                 augment_resize: float = 0,
                  root: str = '_data/assd/'):
         """
         Instancelize GTZAN, indexing clips by enlarged indices and map label to integers.
@@ -32,7 +32,7 @@ class ASSD(Dataset):
 
         self.shrink_image = shrink_image
         self.augment_hvflip = augment_hvflip
-        self.augment_wgn = augment_wgn
+        self.augment_resize = augment_resize
 
         self.train_transform = T.Compose([
             T.ToTensor(),
@@ -40,7 +40,8 @@ class ASSD(Dataset):
         ])
         if self.shrink_image:
             self.pre_transform = T.Compose([
-                T.Resize(self.shrink_image, T.InterpolationMode.NEAREST)
+                T.Resize(self.shrink_image, T.InterpolationMode.NEAREST),
+                T.ConvertImageDtype(torch.float),
             ])
 
         self.h_flip = T.RandomHorizontalFlip(p=1.0)
@@ -70,13 +71,17 @@ class ASSD(Dataset):
                 img = self.h_flip(self.v_flip(img))
                 gt = self.h_flip(self.v_flip(gt))
 
-        if self.augment_wgn > 0:
-            img += torch.randn(img.shape) * self.augment_wgn
+        if np.random.rand() < self.augment_resize:
+            p = np.random.rand() / 2 + 0.5
+            cropper = T.RandomCrop(size=(int(4000*p), int(6000*p)))
+
+            img_gt = cropper(torch.cat((img,gt), 0))
+            img, gt = img_gt[:3, :, :], img_gt[3, :, :].unsqueeze(0)
 
         if self.shrink_image:
             img = self.pre_transform(img)
             gt = self.pre_transform(gt)
-        return img.float(), gt.float()
+        return img, gt
 
 
 def get_assd_dataloader(opt: argparse.Namespace, train_list: list, val_list: list, test_list: list):
@@ -90,7 +95,7 @@ def get_assd_dataloader(opt: argparse.Namespace, train_list: list, val_list: lis
 
     # Instancelize datasets
     train_data = ASSD(list_filename=train_list, mean=mean, std=std, shrink_image=opt.shrink_image,
-                      augment_hvflip=opt.enable_hvflip, augment_wgn=opt.enable_hvflip)
+                      augment_hvflip=opt.enable_hvflip, augment_resize=opt.enable_resize)
 
     val_data = ASSD(list_filename=val_list, mean=mean, std=std, shrink_image=opt.shrink_image)
 
