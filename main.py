@@ -25,19 +25,18 @@ def main():
     parser.add_argument('--recalculate_mean_std', type=bool, default=False)
     parser.add_argument('--save_dict', type=bool, default=True)
 
-    parser.add_argument('--lr_patience', type=int, default=10)
-    parser.add_argument('--l2_reg', type=float, default=1e-5)
+    parser.add_argument('--lr_patience', type=int, default=20)
     parser.add_argument('--es_patience', type=int, default=15)
-    parser.add_argument('--gamma_steplr', type=float, default=np.sqrt(0.1))
+    parser.add_argument('--gamma_steplr', type=float, default=0.5)
     parser.add_argument('--epoch', type=int, default=100)
-    parser.add_argument('--num_workers', type=int, default=1)
-    parser.add_argument('--batch_size', type=int, default=2)
+    parser.add_argument('--num_workers', type=int, default=0)
+    parser.add_argument('--batch_size', type=int, default=8)
 
     # Settings need to be tuned
     parser.add_argument('--backbone', type=str, default='resnet18')  # Num of cross validation folds
     parser.add_argument('--data', default='assd')
     parser.add_argument('--bin_sizes', type=list, default=[1, 2, 3, 6])
-    parser.add_argument('--lr', type=float, default=1e-2)
+    parser.add_argument('--id_optimizer', type=int, default=0)  # 0:AdamW, 1:Adam, 2:AMSGrad, 3:SGD + momentum, 4:SGD
     parser.add_argument('--enable_aux', type=bool, default=True)
     parser.add_argument('--alpha_loss', type=float, default=0.4)
 
@@ -101,8 +100,22 @@ def main():
     # Load model
     model = PSPNet(opt)
     model = model.to(opt.device)
-    optimizer = optim.SGD(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr, momentum=0.9,
-                          weight_decay=opt.l2_reg, nesterov=True)
+
+    if opt.id_optimizer == 0:
+        optimizer = optim.Adam(filter(lambda x: x.requires_grad, model.parameters()), lr=1e-3, weight_decay=1e-2)
+    elif opt.id_optimizer == 1:
+        optimizer = optim.AdamW(filter(lambda x: x.requires_grad, model.parameters()), lr=1e-3, weight_decay=1e-2)
+    elif opt.id_optimizer == 2:
+        optimizer = optim.Adam(filter(lambda x: x.requires_grad, model.parameters()), lr=1e-3, weight_decay=1e-2,
+                               amsgrad=True)
+    elif opt.id_optimizer == 3:
+        optimizer = optim.SGD(filter(lambda x: x.requires_grad, model.parameters()), lr=1e-2, momentum=0.9,
+                              weight_decay=1e-2, nesterov=True)
+    elif opt.id_optimizer == 4:
+        optimizer = optim.SGD(filter(lambda x: x.requires_grad, model.parameters()), lr=1e-2, weight_decay=1e-2)
+    else:
+        raise RuntimeError('\n[warning] Optimizer out of index!\n')
+
     scheduler = optim.lr_scheduler.StepLR(optimizer, int(opt.lr_patience), gamma=opt.gamma_steplr)
 
     # Load data
