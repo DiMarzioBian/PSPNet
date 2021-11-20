@@ -75,7 +75,7 @@ class ASSD(Dataset):
             p = np.random.rand() / 2 + 0.5
             cropper = T.RandomCrop(size=(int(4000*p), int(6000*p)))
 
-            img_gt = cropper(torch.cat((img,gt), 0))
+            img_gt = cropper(torch.cat((img, gt), 0))
             img, gt = img_gt[:3, :, :], img_gt[3, :, :].unsqueeze(0)
 
         if self.shrink_image:
