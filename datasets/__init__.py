@@ -43,6 +43,6 @@ class getter_dataloader(object):
 
 def get_data_detail(dataset: str):
     if dataset == 'assd':
-        return 23, 4000, 6000
+        return 24, 4000, 6000
     else:
         raise RuntimeError('Dataset ' + dataset + ' not found!')

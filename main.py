@@ -38,7 +38,6 @@ def main():
     parser.add_argument('--data', default='assd')
     parser.add_argument('--bin_sizes', type=list, default=[1, 2, 3, 6])
     parser.add_argument('--lr', type=float, default=1e-2)
-    parser.add_argument('--smooth_label', type=float, default=0.3)
     parser.add_argument('--enable_aux', type=bool, default=True)
     parser.add_argument('--alpha_loss', type=float, default=0.4)
 
