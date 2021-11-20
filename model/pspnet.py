@@ -6,7 +6,6 @@ import torch.nn.functional as F
 
 from model.resnet import *
 from model.layers import PyramidPoolingModule
-from model.metrics import LabelSmoothingLoss
 
 from utils import init_weights
 
