@@ -21,7 +21,7 @@ def main():
 
     # Model settings
     parser.add_argument('--shrink_image', type=list, default=[400, 600])
-    parser.add_argument('--enable_spp', type=bool, default=False)
+    parser.add_argument('--backbone_freeze', type=bool, default=True)
     parser.add_argument('--recalculate_mean_std', type=bool, default=False)
     parser.add_argument('--save_dict', type=bool, default=True)
 
@@ -30,7 +30,7 @@ def main():
     parser.add_argument('--gamma_steplr', type=float, default=0.5)
     parser.add_argument('--epoch', type=int, default=100)
     parser.add_argument('--num_workers', type=int, default=1)
-    parser.add_argument('--batch_size', type=int, default=8)
+    parser.add_argument('--batch_size', type=int, default=16)
 
     # Settings need to be tuned
     parser.add_argument('--backbone', type=str, default='resnet18')  # Num of cross validation folds
@@ -38,7 +38,7 @@ def main():
     parser.add_argument('--bin_sizes', type=list, default=[1, 2, 3, 6])
     parser.add_argument('--id_optimizer', type=int, default=0)  # 0:AdamW, 1:Adam, 2:AMSGrad, 3:SGD + momentum, 4:SGD
     parser.add_argument('--enable_aux', type=bool, default=True)
-    parser.add_argument('--alpha_loss', type=float, default=0.4)
+    parser.add_argument('--alpha_loss', type=float, default=0.6)
 
     # Augmentation
     parser.add_argument('--enable_hvflip', type=float, default=0.0)  # enable horizontal and vertical flipping
@@ -46,7 +46,7 @@ def main():
 
     opt = parser.parse_args()
     opt.log = '_result/v' + opt.version + time.strftime("-%b_%d_%H_%M", time.localtime()) + '.txt'
-    opt.device = torch.device('cuda')
+    opt.device = torch.device('cuda:0')
 
     if opt.save_dict:
         opt.state_dict_path = '_result/model/v' + opt.version + time.strftime("-%b_%d_%H_%M", time.localtime()) + '.pkl'
@@ -102,17 +102,17 @@ def main():
     model = model.to(opt.device)
 
     if opt.id_optimizer == 0:
-        optimizer = optim.Adam(filter(lambda x: x.requires_grad, model.parameters()), lr=1e-3, weight_decay=1e-2)
+        optimizer = optim.AdamW(filter(lambda x: x.requires_grad, model.parameters()), lr=1e-3, weight_decay=1e-5)
     elif opt.id_optimizer == 1:
-        optimizer = optim.AdamW(filter(lambda x: x.requires_grad, model.parameters()), lr=1e-3, weight_decay=1e-2)
+        optimizer = optim.Adam(filter(lambda x: x.requires_grad, model.parameters()), lr=1e-3, weight_decay=1e-5)
     elif opt.id_optimizer == 2:
-        optimizer = optim.Adam(filter(lambda x: x.requires_grad, model.parameters()), lr=1e-3, weight_decay=1e-2,
+        optimizer = optim.Adam(filter(lambda x: x.requires_grad, model.parameters()), lr=1e-3, weight_decay=1e-5,
                                amsgrad=True)
     elif opt.id_optimizer == 3:
         optimizer = optim.SGD(filter(lambda x: x.requires_grad, model.parameters()), lr=1e-2, momentum=0.9,
-                              weight_decay=1e-2, nesterov=True)
+                              weight_decay=1e-5, nesterov=True)
     elif opt.id_optimizer == 4:
-        optimizer = optim.SGD(filter(lambda x: x.requires_grad, model.parameters()), lr=1e-2, weight_decay=1e-2)
+        optimizer = optim.SGD(filter(lambda x: x.requires_grad, model.parameters()), lr=1e-2, weight_decay=1e-5)
     else:
         raise RuntimeError('\n[warning] Optimizer out of index!\n')
 

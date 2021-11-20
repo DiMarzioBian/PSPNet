@@ -54,6 +54,7 @@ class PSPNet(nn.Module):
         super(PSPNet, self).__init__()
 
         self.backbone = opt.backbone
+        self.backbone_freeze = opt.backbone_freeze
         self.enable_aux = opt.enable_aux
         self.num_label = opt.num_label
         self.out_dim_pooling = opt.out_dim_pooling
@@ -63,6 +64,9 @@ class PSPNet(nn.Module):
 
         # Override Resnet official code, add dilation at BasicBlock 3 and 4 according to paper
         self.backbone = Backbone(self.backbone)
+        if opt.backbone_freeze:
+            for p in self.backbone.parameters():
+                p.requires_grad = False
 
         self.pyramid_pooling = PyramidPoolingModule(opt, in_dim=opt.out_dim_resnet, out_dim=self.out_dim_pooling)
 
@@ -73,8 +77,11 @@ class PSPNet(nn.Module):
             self.classifier_auxiliary = Classifier(in_dim=self.out_dim_resnet_auxiliary, num_label=self.num_label)
 
     def forward(self, img):
-
-        x, x_auxiliary = self.backbone(img)
+        if self.backbone_freeze:
+            with torch.no_grad():
+                x, x_auxiliary = self.backbone(img)
+        else:
+            x, x_auxiliary = self.backbone(img)
         x = self.pyramid_pooling(x)
         x = self.classifier(x)
         x = F.interpolate(x, img.shape[2:], mode='bilinear', align_corners=False)
