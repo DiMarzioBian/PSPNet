@@ -31,10 +31,10 @@ def main():
     parser.add_argument('--gamma_steplr', type=float, default=np.sqrt(0.1))
     parser.add_argument('--epoch', type=int, default=100)
     parser.add_argument('--num_workers', type=int, default=1)
-    parser.add_argument('--batch_size', type=int, default=8)
+    parser.add_argument('--batch_size', type=int, default=2)
 
     # Settings need to be tuned
-    parser.add_argument('--backbone', type=str, default='resnet18')  # Num of cross validation folds
+    parser.add_argument('--backbone', type=str, default='wide_resnet50_2')  # Num of cross validation folds
     parser.add_argument('--data', default='assd')
     parser.add_argument('--bin_sizes', type=list, default=[1, 2, 3, 6])
     parser.add_argument('--lr', type=float, default=1e-2)
@@ -65,6 +65,16 @@ def main():
         opt.out_dim_resnet = 2048
         opt.out_dim_resnet_auxiliary = 1024
         opt.out_dim_pooling = 2048
+    elif opt.backbone == 'resnext50_32x4d':
+        opt.out_dim_resnet = 2048
+        opt.out_dim_resnet_auxiliary = 1024
+        opt.out_dim_pooling = 2048
+    elif opt.backbone == 'wide_resnet50_2':
+        opt.out_dim_resnet = 2048
+        opt.out_dim_resnet_auxiliary = 1024
+        opt.out_dim_pooling = 2048
+    else:
+        raise RuntimeError('\n[warning] Backbone not found.\n')
 
     opt.seg_criterion = nn.CrossEntropyLoss().to(opt.device)
 

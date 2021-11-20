@@ -6,7 +6,6 @@ import torch.nn.functional as F
 
 from model.resnet import *
 from model.layers import PyramidPoolingModule
-
 from utils import init_weights
 
 
@@ -19,6 +18,13 @@ class Backbone(nn.Module):
             self.model = resnet34(pretrained=True, replace_stride_with_dilation=[0, 2, 4])
         if backbone == 'resnet50':
             self.model = resnet50(pretrained=True, replace_stride_with_dilation=[0, 2, 4])
+        if backbone == 'resnet50':
+            self.model = resnet50(pretrained=True, replace_stride_with_dilation=[0, 2, 4])
+        if backbone == 'resnext50_32x4d':
+            self.model = resnext50_32x4d(pretrained=True, replace_stride_with_dilation=[0, 2, 4])
+        if backbone == 'wide_resnet50_2':
+            self.model = wide_resnet50_2(pretrained=True, replace_stride_with_dilation=[0, 2, 4])
+
 
     def forward(self, x):
         x, x_auxiliary = self.model(x)
