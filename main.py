@@ -34,7 +34,7 @@ def main():
     parser.add_argument('--batch_size', type=int, default=2)
 
     # Settings need to be tuned
-    parser.add_argument('--backbone', type=str, default='wide_resnet50_2')  # Num of cross validation folds
+    parser.add_argument('--backbone', type=str, default='resnet18')  # Num of cross validation folds
     parser.add_argument('--data', default='assd')
     parser.add_argument('--bin_sizes', type=list, default=[1, 2, 3, 6])
     parser.add_argument('--lr', type=float, default=1e-2)
