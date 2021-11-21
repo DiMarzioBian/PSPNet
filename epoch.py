@@ -27,7 +27,7 @@ def train_epoch(model, data, opt, optimizer):
         """ training """
         y_score, y_score_aux = model(images)
 
-        loss_batch = opt.seg_criterion(y_score, y_gt.squeeze(1).long())
+        loss_batch = opt.seg_criterion(y_score, y_gt)
         if opt.enable_aux:
             loss_aux_batch = opt.seg_criterion(y_score_aux, y_gt.squeeze(1).long())
             loss = loss_batch + opt.alpha_loss * loss_aux_batch

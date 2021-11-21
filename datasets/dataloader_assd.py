@@ -34,15 +34,17 @@ class ASSD(Dataset):
         self.augment_hvflip = augment_hvflip
         self.augment_resize = augment_resize
 
-        self.train_transform = T.Compose([
+        self.to_tensor = T.Compose([
             T.ToTensor(),
+        ])
+
+        self.normalize = T.Compose([
             T.Normalize(mean=mean, std=std)
         ])
-        if self.shrink_image:
-            self.pre_transform = T.Compose([
-                T.Resize(self.shrink_image, T.InterpolationMode.NEAREST),
-                T.ConvertImageDtype(torch.float),
-            ])
+
+        self.shrink = T.Compose([
+            T.Resize(self.shrink_image, T.InterpolationMode.NEAREST),
+        ])
 
         self.h_flip = T.RandomHorizontalFlip(p=1.0)
         self.v_flip = T.RandomVerticalFlip(p=1.0)
@@ -54,11 +56,14 @@ class ASSD(Dataset):
         """
         Each returned element is a tuple[data(torch.tensor), label(int)]
         """
-        img = self.train_transform(np.array(Image.open(self._walker[index] + self.ext_img)) / 255)
+        path_img = self._walker[index] + self.ext_img
         path_gt = self._walker[index][:11] + 'label_images_semantic' + self._walker[index][-4:] + self.ext_gt
-        gt = torch.Tensor(np.array(Image.open(path_gt))).unsqueeze(0)
 
-        # Augmentation
+        # Preprocess
+        img = self.to_tensor(np.array(Image.open(path_img)))
+        gt = self.to_tensor(np.array(Image.open(path_gt))) * 255
+
+        # Horizontal and vertical flip
         if np.random.rand() < self.augment_hvflip:
             p = np.random.rand()
             if p < 1/3:
@@ -71,16 +76,16 @@ class ASSD(Dataset):
                 img = self.h_flip(self.v_flip(img))
                 gt = self.h_flip(self.v_flip(gt))
 
+        # Random Crop
         if np.random.rand() < self.augment_resize:
             p = np.random.rand() / 2 + 0.5
             cropper = T.RandomCrop(size=(int(4000*p), int(6000*p)))
 
             img_gt = cropper(torch.cat((img, gt), 0))
-            img, gt = img_gt[:3, :, :], img_gt[3, :, :].unsqueeze(0)
+            img, gt = img_gt[:3, :, :], img_gt[3, :, :].unsqueeze(0).long()
 
-        if self.shrink_image:
-            img = self.pre_transform(img)
-            gt = self.pre_transform(gt)
+        img = self.normalize(self.shrink(img))
+        gt = self.shrink(gt).squeeze(0)
         return img, gt
 
 
@@ -104,7 +109,7 @@ def get_assd_dataloader(opt: argparse.Namespace, train_list: list, val_list: lis
     # Instancelize dataloader
     train_loader = DataLoader(train_data, batch_size=opt.batch_size, num_workers=opt.num_workers, shuffle=True)
     val_loader = DataLoader(val_data, batch_size=opt.batch_size, num_workers=opt.num_workers, shuffle=False)
-    test_loader = DataLoader(val_data, batch_size=opt.batch_size, num_workers=opt.num_workers, shuffle=False)
+    test_loader = DataLoader(test_data, batch_size=opt.batch_size, num_workers=opt.num_workers, shuffle=False)
 
     return train_loader, val_loader, test_loader
 
@@ -117,7 +122,7 @@ def get_mean_std(train_list):
     std = np.zeros(3)
     for i in tqdm(range(len(train_list)), desc='- (Calculating mean and std)   ', leave=False):
         fn = train_list[i]
-        img = np.array(Image.open(fn + '.jpg')) / 255
+        img = np.array(Image.open(fn + '.jpg'))
         for ch in range(img.shape[-1]):
             img_ch = img[:, :, ch]
             mean[ch] += img_ch.mean()

@@ -32,8 +32,8 @@ def main():
     parser.add_argument('--es_patience', type=int, default=15)
     parser.add_argument('--gamma_steplr', type=float, default=0.5)
     parser.add_argument('--epoch', type=int, default=100)
-    parser.add_argument('--num_workers', type=int, default=1)
-    parser.add_argument('--batch_size', type=int, default=2)
+    parser.add_argument('--num_workers', type=int, default=0)
+    parser.add_argument('--batch_size', type=int, default=8)
 
     # Settings need to be tuned
     parser.add_argument('--backbone', type=str, default='resnet18')  # Num of cross validation folds
@@ -41,11 +41,11 @@ def main():
     parser.add_argument('--bin_sizes', type=list, default=[1, 2, 3, 6])
     parser.add_argument('--id_optimizer', type=int, default=0)  # 0:AdamW, 1:Adam, 2:AMSGrad, 3:SGD + momentum, 4:SGD
     parser.add_argument('--enable_aux', type=bool, default=True)
-    parser.add_argument('--alpha_loss', type=float, default=0.6)
+    parser.add_argument('--alpha_loss', type=float, default=0.2)
 
     # Augmentation
-    parser.add_argument('--enable_hvflip', type=float, default=0.0)  # enable horizontal and vertical flipping
-    parser.add_argument('--enable_resize', type=float, default=0.0)  # apply white Gaussian noise
+    parser.add_argument('--enable_hvflip', type=float, default=1.0)  # enable horizontal and vertical flipping
+    parser.add_argument('--enable_resize', type=float, default=1.0)  # apply white Gaussian noise
 
     opt = parser.parse_args()
     opt.log = '_result/v' + opt.version + time.strftime("-%b_%d_%H_%M", time.localtime()) + '.txt'
@@ -123,7 +123,7 @@ def main():
 
     # Load data
     print('\n[Info] Loading data...')
-    trainloader, valloader, val_gt_voting = data_getter.get()
+    trainloader, valloader, testloader = data_getter.get()
 
     # Define logging variants
     loss_best = 1e9
@@ -193,8 +193,19 @@ def main():
                 "and best pa: {pa_best: 8.4f}"
                 .format(loss_best=loss_best, miou_best=miou_best, pa_best=pa_best), )
 
+    """ Testing """
+    with torch.no_grad():
+        loss_test, miou_test, pa_test = test_epoch(model, testloader, opt)
+
+    print('\n- (Validating) Loss:{loss: 8.5f}, mIoU:{miou: 8.4f}, pa:{pa: 8.4f}'
+          .format(loss=loss_test, miou=miou_test, pa=pa_test))
+
+    with open(opt.log, 'a') as f:
+        f.write("\n[Info] Test set result -> loss: {loss: 8.5f}, miou: {miou: 8.4f} and pa: {pa: 8.4f}"
+                .format(loss=loss_test, miou=miou_test, pa=pa_test), )
+
     # Send discord webhook
-    send_webhook(loss_best, miou_best, pa_best)
+    send_webhook(loss_test, miou_test, pa_test)
 
 
 def send_webhook(loss=0, miou=0, pa=0, name_project=None):
