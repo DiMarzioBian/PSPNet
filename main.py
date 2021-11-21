@@ -44,8 +44,8 @@ def main():
     parser.add_argument('--alpha_loss', type=float, default=0.2)
 
     # Augmentation
-    parser.add_argument('--enable_hvflip', type=float, default=1.0)  # enable horizontal and vertical flipping
-    parser.add_argument('--enable_resize', type=float, default=1.0)  # apply white Gaussian noise
+    parser.add_argument('--enable_hvflip', type=float, default=0.5)  # enable horizontal and vertical flipping
+    parser.add_argument('--enable_resize', type=float, default=0.5)  # apply white Gaussian noise
 
     opt = parser.parse_args()
     opt.log = '_result/v' + opt.version + time.strftime("-%b_%d_%H_%M", time.localtime()) + '.txt'
