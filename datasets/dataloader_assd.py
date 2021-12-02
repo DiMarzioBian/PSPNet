@@ -21,7 +21,7 @@ class ASSD(Dataset):
                  augment_resize: float = 0,
                  root: str = '_data/assd/'):
         """
-        Instancelize GTZAN, indexing clips by enlarged indices and map label to integers.
+        Instancelize Aerial Semantic Segmentation dataset, aka drone semantic dataset
         """
         self._walker = list_filename
         self.length = len(self._walker)
