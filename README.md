@@ -3,7 +3,7 @@
 
 Link: https://arxiv.org/abs/1612.01105
 
-### This is a pytorch replicate of PSPnet
+### This is a pytorch implementation of PSPnet
 
 Running on single GPU:
 ```bash
