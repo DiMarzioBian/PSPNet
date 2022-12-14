@@ -1,6 +1,6 @@
 # PSPNet
 
-This is a pytorch implementation of CVPR'17 paper [Pyramid Scene Parsing Network](https://arxiv.org/abs/1612.01105)
+This is an unofficial pytorch implementation of CVPR'17 paper [Pyramid Scene Parsing Network](https://arxiv.org/abs/1612.01105)
 
 Running on single GPU:
 ```bash
